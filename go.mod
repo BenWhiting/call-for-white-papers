@@ -1,4 +1,4 @@
-module papers-please
+module call-for-white-papers
 
 go 1.17
 

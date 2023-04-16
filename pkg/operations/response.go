@@ -5,10 +5,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// logger object for response operations
 var responseHandler = log.With().Str("handler", "response").Logger()
 
+// registerResponseHandler adds all operations to run after after running a HTTP GET command against a URL
 func (o *operations) registerResponseHandler() {
-	// regester what to do on response
 	o.c.OnResponse(printStatusCode(o))
 	o.c.OnError(responseErrorHandler(o))
 }

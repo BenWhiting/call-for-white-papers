@@ -1,0 +1,15 @@
+// For format details, see https://aka.ms/devcontainer.json. For config optio
+{
+	"name": "call-for-wate-papers development environment",
+	"image": "mcr.microsoft.com/devcontainers/go:0-1.19-bullseye",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode-remote.remote-containers",
+				"golang.Go",
+				"streetsidesoftware.code-spell-checker",
+				"ms-vscode.makefile-tools"
+			]
+		}
+	}
+}

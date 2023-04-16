@@ -34,6 +34,8 @@ github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.3.1
 ## explicit
 github.com/golang/protobuf/proto
+# github.com/inconshreveable/mousetrap v1.1.0
+## explicit; go 1.18
 # github.com/kennygrant/sanitize v1.2.4
 ## explicit
 github.com/kennygrant/sanitize
@@ -46,6 +48,10 @@ github.com/rs/zerolog/log
 # github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
 ## explicit
 github.com/saintfish/chardet
+# github.com/spf13/cobra v1.7.0
+## explicit; go 1.15
+# github.com/spf13/pflag v1.0.5
+## explicit; go 1.12
 # github.com/temoto/robotstxt v1.1.2
 ## explicit; go 1.11
 github.com/temoto/robotstxt
