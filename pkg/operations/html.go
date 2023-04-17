@@ -73,7 +73,14 @@ func auditAndQueueHref(o *operations) (string, func(e *colly.HTMLElement)) {
 			// we have now seen
 			o.hasRegistered[urlString] = true
 			// prep for visit
-			e.Request.Visit(urlString)
+			err := e.Request.Visit(urlString)
+			if err != nil {
+				htmlHandler.Error().
+					Uint32("id", e.Request.ID).
+					Str("source", urlString).
+					Err(err)
+				return
+			}
 		} else {
 			htmlHandler.Debug().
 				Uint32("id", e.Request.ID).
@@ -84,7 +91,6 @@ func auditAndQueueHref(o *operations) (string, func(e *colly.HTMLElement)) {
 }
 
 // validate URL before putting into the queue
-
 func validateURLForVisit(u string, o *operations) (shouldVisit bool) {
 	// empty url isn't valid
 	if u == "" {

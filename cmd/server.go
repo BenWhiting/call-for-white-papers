@@ -66,7 +66,8 @@ func main() {
 	opt := operations.New(c, urls)
 	opt.Start()
 
-	fmt.Println("Sites of interest")
+	// Simple print to screen of what sites we should audit
+	fmt.Println("Sites of interest:")
 	for key, value := range opt.FlagForManualVisit {
 		fmt.Printf("Checkout out %s. Reason: %s\n", key, value)
 	}

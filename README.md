@@ -28,7 +28,7 @@ Run the command `make build` to create the cli version of the codebase
 Once the code is compiled run the code like so:
 
 ``` bash
-./cmd/build/papers-please --input ./data/urls_small.json -debug --max-depth 7 --concurrent 2
+./cmd/build/papers-please --input ./data/urls_single.json -debug --max-depth 7 --concurrent 2
 ```
 
 ### Input
