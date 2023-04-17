@@ -1,9 +1,9 @@
 package operations
 
 import (
-	"fmt"
 	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/gocolly/colly"
 	"github.com/rs/zerolog/log"
@@ -27,16 +27,8 @@ func auditTitle(o *operations) (string, func(e *colly.HTMLElement)) {
 			Str("title", e.Text).
 			Msg("title data")
 
-		match, err := regexp.MatchString("(?i)white papers", e.Text)
-		if err != nil {
-			htmlHandler.Error().
-				Uint32("id", e.Request.ID).
-				Msg("failed to configure regex")
-			return
-		}
-
 		// check if we have seen URL before and already flagged it for followup
-		if _, ok := o.FlagForManualVisit[e.Request.URL.String()]; !ok && match {
+		if _, ok := o.FlagForManualVisit[e.Request.URL.String()]; !ok && callsForPaper(e) {
 			reason := "title match"
 			htmlHandler.Info().
 				Uint32("id", e.Request.ID).
@@ -48,59 +40,85 @@ func auditTitle(o *operations) (string, func(e *colly.HTMLElement)) {
 	}
 }
 
+// callsForPaper checks the title object for possible call for white paper text
+func callsForPaper(e *colly.HTMLElement) bool {
+	whitePaper, err := regexp.MatchString("(?i)white papers", e.Text)
+	if err != nil {
+		htmlHandler.Error().
+			Uint32("id", e.Request.ID).
+			Msg("failed to configure regex")
+		return false
+	}
+
+	paper, err := regexp.MatchString("(?i)call for papers", e.Text)
+	if err != nil {
+		htmlHandler.Error().
+			Uint32("id", e.Request.ID).
+			Msg("failed to configure regex")
+		return false
+	}
+
+	return whitePaper || paper
+}
+
 // auditAndQueueHref validates all URLs found and registers possible new urls to be visited when 'a[href]' element is found
 func auditAndQueueHref(o *operations) (string, func(e *colly.HTMLElement)) {
 	return "a[href]", func(e *colly.HTMLElement) {
-		urlString := e.Attr("href")
-
-		// Parse to URL type
-		u, err := url.Parse(urlString)
-		if err != nil {
-			htmlHandler.Error().
-				Uint32("id", e.Request.ID).
-				Str("url", u.String()).
-				Msg("new url not valid")
-			return
-		}
-
-		// Remove fragments and queries from URL for simplicity sake
-		// schema://host/path
-		cleanedURL := fmt.Sprintf("%s://%s%s", u.Scheme, u.Host, u.Path)
-
-		if validateURL(o, u, e.Request.ID) {
+		urlString := e.Request.AbsoluteURL(e.Attr("href"))
+		if validateURLForVisit(urlString, o) {
 			htmlHandler.Debug().
 				Uint32("id", e.Request.ID).
-				Str("source", u.String()).
-				Str("cleaned", cleanedURL).
+				Str("source", urlString).
 				Msg("registering new url to visit")
-
-			o.c.Visit(cleanedURL)
+			// we have now seen
+			o.hasRegistered[urlString] = true
+			// prep for visit
+			e.Request.Visit(urlString)
+		} else {
+			htmlHandler.Debug().
+				Uint32("id", e.Request.ID).
+				Str("source", urlString).
+				Msg("don't need to visit.")
 		}
 	}
 }
 
-func validateURL(o *operations, url *url.URL, requestID uint32) (shouldVisit bool) {
-	// Check if URL has host name. If it doesn't we most likely don't want to visit it or can't
-	if url.Hostname() == "" {
-		htmlHandler.Debug().
-			Uint32("id", requestID).
-			Str("url", url.String()).
-			Msg("url has no host")
+// validate URL before putting into the queue
+
+func validateURLForVisit(u string, o *operations) (shouldVisit bool) {
+	// empty url isn't valid
+	if u == "" {
 		return
 	}
 
-	// Check to make sure we haven't visited the full url before to stop inf looping
-	if _, ok := o.visitMap[url.String()]; !ok {
-		o.visitMap[url.String()] = fmt.Sprintf("%d", requestID)
-	} else {
-		htmlHandler.Debug().
-			Uint32("id", requestID).
-			Str("url", url.String()).
-			Msg("url already seen")
+	// Check if we have already seen it and registered it.
+	// Even if it is not a valid url to search, register to skip later
+	if _, seen := o.hasRegistered[u]; seen {
 		return
 	}
 
-	// looks good, check URL out
+	// get url object
+	parsed, err := url.Parse(u)
+	if err != nil {
+		return
+	}
+
+	// Don't visit URLs with fragments
+	if len(parsed.Fragment) > 1 {
+		return
+	}
+
+	// Call for white papers are never under the following segments
+	var segmentIgnores = [...]string{"uploads", "documents"}
+	parsedSplit := strings.Split(parsed.Path, "/")
+	for _, segment := range parsedSplit {
+		for _, ignores := range segmentIgnores {
+			if segment == ignores {
+				return
+			}
+		}
+	}
+
 	shouldVisit = true
 	return
 }

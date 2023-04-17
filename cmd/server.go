@@ -65,9 +65,9 @@ func main() {
 	// Run operations
 	opt := operations.New(c, urls)
 	opt.Start()
-	fmt.Println("I-------")
+
+	fmt.Println("Sites of interest")
 	for key, value := range opt.FlagForManualVisit {
 		fmt.Printf("Checkout out %s. Reason: %s\n", key, value)
 	}
-
 }
