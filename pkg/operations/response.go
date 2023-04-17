@@ -14,16 +14,18 @@ func (o *operations) registerResponseHandler() {
 	o.c.OnError(responseErrorHandler(o))
 }
 
+// printStatusCode prints the returned status code
 func printStatusCode(o *operations) func(*colly.Response) {
 	return func(r *colly.Response) {
 		responseHandler.Debug().
 			Uint32("id", r.Request.ID).
 			Int("code", r.StatusCode).
+			Str("target", r.Request.URL.String()).
 			Msg("target response")
 	}
 }
 
-// Set error handler
+// responseErrorHandler handles when a request returns an error
 func responseErrorHandler(o *operations) func(*colly.Response, error) {
 	return func(r *colly.Response, err error) {
 		responseHandler.Error().

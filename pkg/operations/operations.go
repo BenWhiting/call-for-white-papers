@@ -13,7 +13,8 @@ type Input struct {
 type operations struct {
 	c                  *colly.Collector
 	urls               []*url.URL
-	visitMap           map[string]string
+	hasVisited         map[string]string
+	hasRegistered      map[string]bool
 	FlagForManualVisit map[string]string
 }
 
@@ -21,12 +22,13 @@ func New(c *colly.Collector, u []*url.URL) *operations {
 	return &operations{
 		c:                  c,
 		urls:               u,
-		visitMap:           make(map[string]string),
+		hasVisited:         make(map[string]string),
+		hasRegistered:      make(map[string]bool),
 		FlagForManualVisit: make(map[string]string),
 	}
 }
 
-func (o *operations) Start() error {
+func (o *operations) Start() {
 	o.registerHtmlHandler()
 	o.registerRequestHandler()
 	o.registerResponseHandler()
@@ -36,6 +38,6 @@ func (o *operations) Start() error {
 		o.c.Visit(url.String())
 	}
 
+	// wait until collector is complete
 	o.c.Wait()
-	return nil
 }

@@ -17,11 +17,14 @@ import (
 
 var domains []string
 var urls []*url.URL
+var concurrent *int
+var maxDepth *int
 
 func init() {
-	// Get input through flags
 	dataFilePath := flag.String("input", "input.json", "json configuration input file for seeding web crawler")
 	debug := flag.Bool("debug", false, "sets log level to debug")
+	concurrent = flag.Int("concurrent", 2, "max number of concurrent processes while running")
+	maxDepth = flag.Int("max-depth", 1, "max-depth limits the recursion depth of visited URLs.")
 	flag.Parse()
 
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
@@ -32,8 +35,7 @@ func init() {
 	// Read Input
 	jsonFile, err := os.Open(*dataFilePath)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		panic(err)
 	}
 
 	// Read/Parse Input
@@ -43,7 +45,7 @@ func init() {
 	for _, fullUrl := range i.Urls {
 		u, err := url.Parse(fullUrl)
 		if err != nil {
-			os.Exit(1)
+			panic(err)
 		}
 		domains = append(domains, u.Hostname())
 		urls = append(urls, u)
@@ -51,17 +53,21 @@ func init() {
 }
 
 func main() {
-
 	// Create collector base on input
 	c := colly.NewCollector(
-		colly.MaxDepth(1),
+		colly.MaxDepth(*maxDepth),
 		colly.Async(false),
 		colly.AllowedDomains(domains...),
 	)
-	c.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: 2})
+	c.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: *concurrent})
 	c.SetRequestTimeout(15 * time.Second)
 
 	// Run operations
 	opt := operations.New(c, urls)
 	opt.Start()
+	fmt.Println("I-------")
+	for key, value := range opt.FlagForManualVisit {
+		fmt.Printf("Checkout out %s. Reason: %s\n", key, value)
+	}
+
 }
